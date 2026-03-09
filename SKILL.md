@@ -18,9 +18,49 @@ When you're about to build something non-trivial, **search first**. The best cod
 
 ## Core Workflow
 
+### Step 0: Should I Search?
+
+Before searching, run this decision gate:
+
+**Skip search if ANY of these are true:**
+- The project already has an established dependency for this domain (e.g., project uses FastAPI — don't search for web frameworks)
+- The task uses well-known standard tools (see Known Solutions table below)
+- You're extending existing code that already imports the relevant library
+- The task is pure glue code, configuration, or UI work with no algorithmic complexity
+- The user explicitly said to build from scratch
+
+**Search if ANY of these are true:**
+- The domain is niche or specialized (bioinformatics, ontology management, PDF parsing, etc.)
+- You're unsure whether a mature solution exists
+- The user explicitly asks for library recommendations
+- Building from scratch would take 100+ lines for something that likely exists as a package
+
+### Known Solutions (Skip Search)
+
+For these common needs, use the standard tool directly — no search needed:
+
+| Need | Python | JavaScript/TS | R |
+|------|--------|---------------|---|
+| HTTP requests | `requests` / `httpx` | `axios` / `fetch` | `httr2` |
+| DataFrames | `pandas` | — | `dplyr` / `tidyverse` |
+| JSON | `json` (stdlib) | built-in | `jsonlite` |
+| CSV | `pandas` / `csv` | `papaparse` | `readr` |
+| Web framework | `FastAPI` / `Flask` / `Django` | `Next.js` / `Express` | `shiny` / `plumber` |
+| ORM / DB | `SQLAlchemy` / `asyncpg` | `Prisma` / `Drizzle` | `DBI` / `dbplyr` |
+| Testing | `pytest` | `vitest` / `jest` | `testthat` |
+| CLI | `click` / `typer` | `commander` | `optparse` |
+| Dates | `datetime` / `pendulum` | `date-fns` / `dayjs` | `lubridate` |
+| Async | `asyncio` / `aiohttp` | built-in | — |
+| Plotting | `matplotlib` / `seaborn` / `plotly` | `d3` / `recharts` | `ggplot2` |
+| ML basics | `scikit-learn` | — | `tidymodels` / `caret` |
+| Image | `Pillow` / `opencv-python` | `sharp` | — |
+| Regex | `re` (stdlib) | built-in | `stringr` |
+
+If the task fits this table, just use the library. Don't waste time confirming it.
+
 ### Step 1: Assess the Task
 
-When the user asks you to build something, pause and think:
+When the user asks you to build something and you passed Step 0 (search is warranted), think:
 
 1. **What is the core functionality needed?** Break it down into components.
 2. **Which components likely have mature library support?** Most domains do — data processing, visualization, API clients, file format handling, scientific computing, web frameworks, etc.
@@ -28,29 +68,47 @@ When the user asks you to build something, pause and think:
 
 ### Step 2: Search Strategically
 
-Search across the relevant platforms for the user's ecosystem. Be smart about your queries:
+Search across the relevant platforms for the user's ecosystem. **Keep queries short and focused.**
 
-**GitHub**: Best for finding complete tools, frameworks, templates, and reference implementations.
-- Search with domain keywords + quality filters: `image segmentation deep learning language:python stars:>100`
-- Great for: finding boilerplate projects, CLI tools, framework comparisons, and "awesome-X" lists
+#### Query Formatting Rules
+
+**CRITICAL — most empty results come from bad queries:**
+
+| Rule | Bad | Good |
+|------|-----|------|
+| Max 2-3 keywords | `hierarchical topic taxonomy ontology management python` | `topic ontology` |
+| No language in PyPI/CRAN queries | `python async scraping` | `async scraping` |
+| Use `language:` filter on GitHub | `python web framework` | `web framework language:python` |
+| Functional terms, not descriptions | `tool for managing hierarchies` | `hierarchy management` |
+| Split compound needs into separate queries | `pdf parsing and ocr extraction` | Query 1: `pdf parsing`, Query 2: `ocr extraction` |
+
+**Platform-specific tips:**
+
+**GitHub**: Best for complete tools, frameworks, and reference implementations.
+- Always use `language:` and `stars:>` filters: `"ontology management" language:python stars:>50`
+- Great for: boilerplate projects, CLI tools, framework comparisons, and "awesome-X" lists
 
 **PyPI**: Best for installable Python packages.
-- Search with functional keywords: `async web scraping`, `dataframe validation`
+- Keep to 1-2 functional keywords: `async scraping`, `dataframe validation`
 - Check the package's PyPI page for download stats, last release date, and dependency count
 
 **CRAN / r-universe**: Best for R statistical packages.
-- Search with statistical/methodological terms: `survival analysis`, `mixed effects models`
+- Use methodological terms: `survival analysis`, `mixed effects`
 - Check reverse dependencies count as a signal of community adoption
 
 **Bioconductor**: Best for bioinformatics R packages.
-- Search with biological terms: `single cell RNA-seq`, `ChIP-seq peak calling`, `flow cytometry`
+- Use biological terms: `single cell RNA`, `ChIP-seq`, `flow cytometry`
 - Especially useful for genomics, proteomics, and imaging analysis pipelines
 
-**Tips for effective searching:**
-- Start broad, then narrow. `"image segmentation"` first, then `"image segmentation microscopy cellpose"` if needed.
-- Search GitHub and the language-specific registry separately — they surface different things.
-- For niche domains, also try searching for "awesome-X" lists on GitHub (e.g., `awesome-single-cell`).
-- When comparing options, open the GitHub repos and skim the README, recent issues, and commit frequency.
+#### Fallback Strategy (When Results Are Empty)
+
+If a search returns 0 results, do NOT give up — retry with progressively broader queries:
+
+1. **Broaden keywords**: Drop the most specific term. `topic ontology python` → `ontology`
+2. **Try synonyms**: `hierarchy` → `taxonomy`, `tree structure`, `DAG`
+3. **Switch platform**: PyPI empty → try GitHub. GitHub empty → try PyPI with different terms
+4. **Search for "awesome" lists**: On GitHub, try `awesome-[domain]` (e.g., `awesome-ontology`)
+5. **Give up gracefully**: After 2-3 retries across platforms, tell the user: "No mature library found for this — recommend building from scratch" — this is a valid and useful outcome
 
 ### Step 3: Evaluate Quality
 
@@ -107,7 +165,10 @@ Here are effective search patterns for common domains:
 
 ## Important Notes
 
-- **Don't over-search**: For simple tasks where you're confident about the standard tool (e.g., `requests` for HTTP, `pandas` for dataframes), just use it. Search when you're in unfamiliar territory or when there might be a better specialized tool.
+- **Minimize wasted searches**: Always run Step 0 first. Most tasks in an existing project don't need a library search.
+- **Short queries**: 2-3 keywords max. This is the #1 cause of empty results. When in doubt, shorter is better.
 - **Respect the user's preferences**: If they already specified a library or approach, don't second-guess it unless you see a clear issue.
 - **Be honest about trade-offs**: No library is perfect. Mention the downsides too.
+- **Check existing deps first**: Before recommending a new library, check `requirements.txt` / `package.json` / `pyproject.toml` — the project may already have a dependency that covers the need.
+- **"No library found" is a valid answer**: Don't force a recommendation. If nothing good exists, say so and move on to building.
 - **Check for breaking changes**: If recommending a major version (v2.0 etc.), note whether migration from older versions is an issue.
